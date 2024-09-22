@@ -1,31 +1,20 @@
-import polars as pr
 from pathlib import Path
+from typing import List, Optional, Self
+
+import polars as pr
 from torch import Tensor
 from torch.utils.data import Dataset
-from typing import Optional,List,Callable
-from polars.dataframe import DataFrame
-from polars.series import Series
+
 
 class IntoDataset(Dataset):
     def __init__(
         self,
-        dataset: DataFrame | Series ,/,
+        dataset ,*,
         index : Optional[str] = None,
-        mapper: Optional[Callable] = None,
-        # data_range : int = None
     ):
         super().__init__()
-        if index is not None and isinstance(dataset , DataFrame):
-            if mapper is None:
-                dataset = dataset.clone()[index]
-            else:
-                dataset = dataset.clone()[index].map_elements(mapper)
-        assert not isinstance(dataset, DataFrame)
-        self.dataset = dataset
-    
-    def __load_from_indecies(*inxs):
-        pass
-    
+        self.dataset = dataset[index]
+
     def __getitem__(self, x : int) -> Tensor:
         return self.dataset[x]
         
@@ -35,10 +24,49 @@ class IntoDataset(Dataset):
     @classmethod
     def from_parquet(
         cls,
-        path: Path | str,/,
+        path: Path | str,*,
         index: Optional[List[str]] = None
-    ):
-        data: DataFrame = pr.from_parquet(path)
-        col = data.columns
-        return cls(data , index=col[0])
+    ) -> Self:
+        data = pr.read_parquet(path).select([
+            pr.concat_str( index ).alias('data')
+        ])
+        return cls(data , index='data')
         
+
+class ParquteLoader():
+
+    def __init__(self, path:str , col :list[str] = ['input', 'output']) -> None:
+        self.path = path
+        self.data = pr.read_parquet(path).select([
+            pr.concat_str( col ).alias("data")
+        ]).to_dict()
+
+    def __iter__(self):
+        return iter(self.data['data'])
+
+class SimpleDataset(Dataset):
+    def __init__(self , path):
+        super().__init__()
+        self.path = path
+        self.data = pr.read_parquet(path).select(
+            pr.concat_str(['input', 'output']).alias('merge')
+        ).to_dict()['merge']
+    def __getitem__(self , x):
+        return self.data[x]
+    def __len__(self):
+        return len(self.data)
+
+
+
+
+class GetData(Dataset):
+
+    def __init__(self , ca : str):
+        super().__init__()
+        self.data = ca.split("\n")
+
+    def __getitem__(self , x):
+        return self.data[x]
+
+    def __len__(self):
+        return len(self.data)
