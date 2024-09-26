@@ -1,4 +1,4 @@
-cookbook.ipynb
+*.ignore.*
 __pycache__/
 .jupyter_ystore.db
 .ipynb_checkpoints/
