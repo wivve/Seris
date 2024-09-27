@@ -7,6 +7,7 @@ from dataclasses import dataclass
 @dataclass
 class ModelConfig:
     dim: int
+    lr: float
     d_model: int
     vocab_size: int
     nheads : int
