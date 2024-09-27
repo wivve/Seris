@@ -64,9 +64,13 @@ class Transformer(nn.Module):
         self.fully_conn = nn.Sequential(
             nn.Linear(self.d_model*self.dim , self.vocab_size)
         )
-        
+       
     def forward(self, x: Tensor) -> Tensor:
         x = self.emb_proj( x )
         x = self.multihead( x )
         x = self.fully_conn( x.view(-1, self.d_model*self.dim) )
         return x
+
+    def generate(self , x : Tensor ) -> Tensor:
+        y = nn.functional.softmax( self(x) ,dim=-1)
+        return torch.multinomial( y , num_samples=1)
