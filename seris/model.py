@@ -2,6 +2,16 @@ import torch
 import einops
 import torch.nn as nn
 from torch import Tensor
+from dataclasses import dataclass
+
+@dataclass
+class ModelConfig:
+    dim: int
+    d_model: int
+    vocab_size: int
+    nheads : int
+    batch_size : int
+
 class Attention(nn.Module):
     def __init__(
         self,
@@ -40,22 +50,18 @@ class Head(nn.Module):
 class Transformer(nn.Module):
     def __init__(
         self,*,
-        dim: int = 64,
-        nheads: int = 1,
-        d_model: int =32,
-        vocab_size: int = 1,
-        batch_size: int = 32
+        config: ModelConfig
     ):
         super().__init__()
-        self.dim = dim
-        self.nheads = nheads
-        self.d_model = d_model
-        self.vocab_size = vocab_size
-        self.bs = batch_size
-        self.emb_proj = nn.Embedding(vocab_size, d_model)
-        self.multihead = Head( dim = dim ,d_model=d_model , nheads=nheads)
+        self.dim = config.dim
+        self.nheads = config.nheads
+        self.d_model = config.d_model
+        self.vocab_size = config.vocab_size
+        # self.bs = batch_size
+        self.emb_proj = nn.Embedding(self.vocab_size, self.d_model)
+        self.multihead = Head( dim = self.dim ,d_model=self.d_model , nheads=self.nheads)
         self.fully_conn = nn.Sequential(
-            nn.Linear(d_model*dim , vocab_size)
+            nn.Linear(self.d_model*self.dim , self.vocab_size)
         )
         
     def forward(self, x: Tensor) -> Tensor:
